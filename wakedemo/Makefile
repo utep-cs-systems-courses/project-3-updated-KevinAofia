@@ -16,5 +16,11 @@ wakedemo.elf: ${COMMON_OBJECTS} wakedemo.o wdt_handler.o
 load: wakedemo.elf
 	msp430loader.sh $^
 
+wakedemo1.elf: ${COMMON_OBJECTS} wakedemo1.o wdt_handler.o
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd 
+
+load1: wakedemo1.elf
+	msp430loader.sh $^
+
 clean:
 	rm -f *.o *.elf
