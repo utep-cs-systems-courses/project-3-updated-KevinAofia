@@ -10,7 +10,7 @@ u_int fontFgColor = COLOR_DARK_ORANGE;
 u_int shapeColor = COLOR_BLUE;
 u_int shape2Color = COLOR_VIOLET;
 u_int shape3Color = COLOR_RED;
-u_int shape4Color = COLOR_WHITE;
+u_int shape4Color = COLOR_BLACK;
 
 
 void wdt_c_handler()
@@ -23,31 +23,21 @@ void wdt_c_handler()
     //change square and text color
     fontFgColor = (fontFgColor == COLOR_DARK_ORANGE) ? COLOR_BLUE : COLOR_DARK_ORANGE;
     shapeColor = (shapeColor == COLOR_BLUE) ? COLOR_DARK_ORANGE : COLOR_BLUE;
-    //erase black triangle
-    for(u_char r = 0; r < 10; r++) {
-      for(u_char c = 0; c <= r; c++) {
-	drawPixel(screenWidth/2 + c, screenHeight/2 - r , COLOR_WHITE);
-      }
-    }
     redrawScreen = 1;
   }
-  if (secCount == 150 || secCount == 200) {
+  if (secCount == 225) {
     //change colors of violet triangle faster than other shapes
     shape2Color = (shape2Color == COLOR_VIOLET) ? COLOR_LIME_GREEN : COLOR_VIOLET;
     redrawScreen = 1;
   }
-  if (secCount == 125) {
-    shape3Color = (shape3Color == COLOR_RED) ? COLOR_WHITE : COLOR_RED;
-    shape4Color = (shape4Color == COLOR_WHITE) ? COLOR_RED : COLOR_WHITE;
+  if (secCount == 150) {
+    //change colors of violet triangle faster than other shapes
+    shape3Color = (shape3Color == COLOR_RED) ? COLOR_YELLOW : COLOR_RED;
     redrawScreen = 1;
   }
-  if (secCount == 50 || secCount == 100) {
-    //draw black triangle
-    for(u_char r = 0; r < 10; r++) {
-      for(u_char c = 0; c <= r; c++) {
-	drawPixel(screenWidth/2 + c, screenHeight/2 - r , COLOR_BLACK);
-      }
-    } 
+  if (secCount == 75) {
+    //change colors of violet triangle faster than other shapes
+    shape4Color = (shape4Color == COLOR_BLACK) ? COLOR_SIENNA : COLOR_BLACK;
     redrawScreen = 1;
   }
 }
@@ -65,29 +55,21 @@ void main()
   while (1) {			//loop forever
     if (redrawScreen) {         
       redrawScreen = 0;         //reset redraw
-      drawString5x7(20,20, "AOFIA RULES.", fontFgColor, COLOR_WHITE);
-      //draw blue sqaure roughly in the middle
-      for(u_char r = 0; r < 15; r++) {
-	for(u_char c = 0; c < 15; c++) {
-	  drawPixel(screenWidth/2 + c, screenHeight/2 + r , shapeColor);
-	}
-      }
-      //draw violet triangle
-      for(u_char r = 0; r < 10; r++) {
+      drawString5x7(20,20, "  KEVIN AOFIA  ", fontFgColor, COLOR_WHITE);
+      
+      //draw upper right triangles 
+      for(u_char r = 0; r < 10; r++) { 
 	for(u_char c = 0; c <= r; c++) {
-	  drawPixel(screenWidth/2 - c, screenHeight/2 - r , shape2Color);
+	  drawPixel(screenWidth/2 + c, screenHeight/2 + r , shapeColor); //upper right
+	  drawPixel(screenWidth/2 - c, screenHeight/2 + r , shape2Color); //upper left
 	}
       }
-      //draw red triangle
-      for(u_char r = 0; r < 10; r++) {
-	for(u_char c = 0; c <= r; c++) {
-	  drawPixel(screenWidth/2 - c, screenHeight/2 + r , shape3Color);
-	}
-      }
-      //draw red square
-      for(u_char r = 0; r < 10; r++) {
-	for(u_char c = 0; c < 10; c++) {
-	  drawPixel(screenWidth/2 - c, screenHeight/2 + r , shape4Color);
+      //draw lower right triangles
+      for(u_char r = 0; r <= 10; r++) { 
+	for(u_char c = 0; c <= 10 - r; c++) { 
+	  //offset 10 rows 
+	  drawPixel((screenWidth/2 + c) , (screenHeight/2 + r) + 10, shape3Color); //lower right
+	  drawPixel((screenWidth/2 - c), (screenHeight/2 + r) + 10, shape4Color); //lower left
 	}
       }
     }
