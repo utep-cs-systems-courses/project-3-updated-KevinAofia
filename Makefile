@@ -7,6 +7,8 @@ all:
 	(cd p2sw-demo; make)
 	(cd shape-motion-demo; make)
 
+	(cd wakedemo; make)
+
 doc:
 	rm -rf doxygen_docs
 	doxygen Doxyfile
@@ -18,5 +20,8 @@ clean:
 	(cd p2sw-demo; make clean)
 	(cd shape-motion-demo; make clean)
 	(cd circleLib; make clean)
+
+	(cd wakedemo; make clean)
+
 	rm -rf lib h
 	rm -rf doxygen_docs/*
