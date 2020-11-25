@@ -9,6 +9,8 @@ all:
 
 	(cd wakedemo; make)
 
+	(cd project3 && make)
+
 doc:
 	rm -rf doxygen_docs
 	doxygen Doxyfile
@@ -22,6 +24,8 @@ clean:
 	(cd circleLib; make clean)
 
 	(cd wakedemo; make clean)
+
+	(cd project3 && make clean)
 
 	rm -rf lib h
 	rm -rf doxygen_docs/*
