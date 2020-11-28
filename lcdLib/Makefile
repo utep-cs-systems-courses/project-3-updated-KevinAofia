@@ -21,9 +21,3 @@ install: libLcd.a
 
 clean:
 	rm -f libLcd.a *.o *.elf
-
-lcddemo.elf: lcddemo.o libLcd.a 
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ -lTimer 
-
-load: lcddemo.elf
-	msp430loader.sh $^
