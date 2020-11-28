@@ -7,7 +7,7 @@ LDFLAGS		= -L../lib -L/opt/ti/msp430_gcc/include/
 CC              = msp430-elf-gcc
 AS              = msp430-elf-gcc -mmcu=${CPU} -c
 
-all:aofia.elf
+all:aofia.elf 
 #############################################################
 aofia.elf: ${COMMON_OBJECTS} aofia.o wdt_handler.o
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd 
@@ -21,12 +21,15 @@ aofia1.elf: ${COMMON_OBJECTS} aofia1.o wdt_handler.o
 load1: aofia1.elf
 	msp430loader.sh $^
 #############################################################
-#added -lp2sw,
+#added -lp2sw, -lCircle, -lShape
 aofia_lab3.elf: ${COMMON_OBJECTS} aofia_lab3.o wdt_handler.o
-	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd -lp2sw
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd -lp2sw -lCircle -lShape
 
 load_lab3: aofia_lab3.elf
 	msp430loader.sh $^
 #############################################################
 clean:
 	rm -f *.o *.elf
+#############################################################
+
+
