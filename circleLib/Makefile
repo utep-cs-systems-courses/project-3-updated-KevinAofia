@@ -29,13 +29,5 @@ clean:
 	rm -f libCircle.a abCircle.h abCircle_decls.h chordVec.h *.o *.elf makeCircles
 	rm -rf circles
 
-circledemo.elf: circledemo.o libCircle.a
-	$(CC) $(CFLAGS) $(LDFLAGS) $^  -lLcd -lTimer -lShape -o $@
-
-
-load: circledemo.elf
-	msp430loader.sh $^
-
-
 
 
