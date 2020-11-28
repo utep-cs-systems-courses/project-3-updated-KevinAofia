@@ -21,8 +21,9 @@ aofia1.elf: ${COMMON_OBJECTS} aofia1.o wdt_handler.o
 load1: aofia1.elf
 	msp430loader.sh $^
 #############################################################
+#added -lp2sw,
 aofia_lab3.elf: ${COMMON_OBJECTS} aofia_lab3.o wdt_handler.o
-	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd 
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd -lp2sw
 
 load_lab3: aofia_lab3.elf
 	msp430loader.sh $^
