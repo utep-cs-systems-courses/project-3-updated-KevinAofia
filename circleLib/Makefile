@@ -1,4 +1,4 @@
-all: libCircle.a circledemo.elf
+all: libCircle.a
 
 CPU             = msp430g2553
 CFLAGS          = -mmcu=${CPU} -Os -I../h

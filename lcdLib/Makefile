@@ -1,4 +1,4 @@
-all: libLcd.a lcddemo.elf
+all: libLcd.a
 
 CPU             = msp430g2553
 CFLAGS          = -mmcu=${CPU} -Os -I../h 
