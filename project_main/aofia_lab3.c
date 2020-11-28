@@ -6,76 +6,99 @@
 #include "aofia_lab3.h"
 #include "shape.h"
 #include "abCircle.h"
-
 #define LED_GREEN BIT6             //P1.6
 #define RED_LED BIT0               //P1.0
-short redrawScreen = 1;
-u_int fontFgColor = COLOR_RED; 
-u_int color = COLOR_BLUE;
-u_int color2 = COLOR_VIOLET;
-u_int color3 = COLOR_RED;
-u_int color4 = COLOR_BLACK;
-u_int word_color = COLOR_LIME_GREEN;
 
-u_int bgColor = COLOR_WHITE; //extern variable declared in shape.h  
+short redrawScreen = 1;
+//u_int fontFgColor = COLOR_RED; 
+//u_int color = COLOR_BLUE;
+//u_int color2 = COLOR_VIOLET;
+//u_int color3 = COLOR_RED;
+//u_int color4 = COLOR_BLACK;
+//u_int word_color = COLOR_LIME_GREEN;
+
+u_int fontFgColor = COLOR_RED, color = COLOR_BLUE,color2 = COLOR_VIOLET,color3 = COLOR_RED,
+  color4 = COLOR_BLACK,word_color = COLOR_LIME_GREEN;
+
+
+
+
+
+u_int bgColor = COLOR_BLACK; //extern variable declared in shape.h, used for motion bg
 
 char active_switches[5];    //extern variable declared in aofia_lab3.h
 
-//AbRect rect10 = {abRectGetBounds, abRectCheck, {10,10}};      //10x10 rectangle
-//AbRArrow rightArrow = {abRArrowGetBounds, abRArrowCheck, 30}; //right arrow
+AbRect rect10 = {abRectGetBounds, abRectCheck, {10,10}};      //10x10 rectangle
+AbRArrow rightArrow = {abRArrowGetBounds, abRArrowCheck, 30}; //right arrow
 
-AbRect rect10 = {abRectGetBounds, abRectCheck, {20,20}};      //10x10 rectangle
-AbRArrow rightArrow = {abRArrowGetBounds, abRArrowCheck, 50};
-
-AbRectOutline fieldOutline = {	                              //playing field
+AbRectOutline fieldOutline = {	                              //motion play field/range
   abRectOutlineGetBounds, abRectOutlineCheck,
   {screenWidth/2 - 10, screenHeight/2 - 10}
 };
-Layer layer4 = {
-  (AbShape *)&rightArrow,
+Layer layer6 = {
+  (AbShape *)&circle10,
   {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
   {0,0}, {0,0},				    //last & next pos 
-  COLOR_PINK,
+  COLOR_BLUE,
   0
 };
-Layer layer3 = {		            //Layer with an orange circle
+Layer layer5 = {		            //Layer with an orange circle
   (AbShape *)&circle8,
   {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
   {0,0}, {0,0},				    //last & next pos
-  COLOR_VIOLET,
+  COLOR_DARK_GREEN, 
+  &layer6,
+};
+Layer layer4 = {		            //Layer with an orange circle
+  (AbShape *)&circle6,
+  {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
+  {0,0}, {0,0},				    //last & next pos
+  COLOR_PURPLE, 
+  &layer5,
+};
+Layer layer3 = {		            //Layer with an orange circle
+  (AbShape *)&circle4,
+  {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
+  {0,0}, {0,0},				    //last & next pos
+  COLOR_WHITE, 
   &layer4,
 };
-Layer fieldLayer = {		            //playing field as a layer
+Layer fieldLayer = {		            //cast a boundary layer
   (AbShape *) &fieldOutline,
   {screenWidth/2, screenHeight/2},          //center
   {0,0}, {0,0},				    //last & next pos
-  COLOR_BLACK,
-  &layer3
+  COLOR_BLACK, //WHERE
+  &layer3,
 };
-Layer layer1 = {		            //Layer with a red square
-  (AbShape *)&rect10,
+Layer layer1 = {		           
+  //(AbShape *)&rect10,
+  (AbShape *)&circle2,
   {screenWidth/2, screenHeight/2},          //center
   {0,0}, {0,0},				    //last & next pos
   COLOR_RED,
   &fieldLayer,
 };
-Layer layer0 = {		            //Layer with an orange circle
-  (AbShape *)&circle14,
+Layer layer0 = {		           
+  (AbShape *)&circle12,
   {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
   {0,0}, {0,0},				    //last & next pos
-  COLOR_ORANGE,
+  COLOR_LIME_GREEN,
   &layer1,
 };
-// Moving Layer,L.L. layer ref.,Veloc. rep. one iter. of change(dir. & mag.)
+//Moving Layer,L.L. layer ref.,Veloc. rep. one iter. of change(dir. & mag.)
 typedef struct MovLayer_s {
   Layer *layer;
   Vec2 velocity;
   struct MovLayer_s *next;
 } MovLayer;
-//initial value of {0,0} will be overwritten
-MovLayer ml3 = { &layer3, {1,1}, 0 };       //not all layers move 
-MovLayer ml1 = { &layer1, {1,2}, &ml3 }; 
-MovLayer ml0 = { &layer0, {2,1}, &ml1 }; 
+                                         //initial value of {0,0} will be overwritten
+MovLayer ml6 = { &layer6, {1,2}, 0 };    //added circles to linked list
+MovLayer ml5 = { &layer5, {2,1}, &ml6 };
+MovLayer ml4 = { &layer4, {1,1}, &ml5 };
+MovLayer ml3 = { &layer3, {2,2}, &ml4 };        
+MovLayer ml1 = { &layer1, {1,3}, &ml3 }; 
+MovLayer ml0 = { &layer0, {3,1}, &ml1 };
+
 void movLayerDraw(MovLayer *movLayers, Layer *layers) {
   int row, col;
   MovLayer *movLayer;
@@ -120,20 +143,22 @@ void mlAdvance(MovLayer *ml, Region *fence) {
 	  (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) ) {
 	int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
 	newPos.axes[axis] += (2*velocity);
-      } //if outside of fence
-    } //for axis
+      }                                 //if outside of fence
+    }                                   //for axis
     ml->layer->posNext = newPos;
   }//for ml
 }
-//u_int bgColor = COLOR_BLUE;     //The background color
+//u_int bgColor = COLOR_BLUE;          //The background color
 //int redrawScreen = 1;           //Boolean for whether screen needs to be redrawn
 Region fieldFence;		//fence around playing field
 
 void wdt_c_handler()
 {
   static int secCount = 0;
+  static int secMotionCount = 0;
 
   secCount ++;
+  secMotionCount ++;
   if (secCount == 250) {      //every 1 second 
     secCount = 0;             //reset counter every 250 interrupts per second
     fontFgColor = (fontFgColor == COLOR_RED) ? COLOR_BLUE : COLOR_RED; //switch2 colors
@@ -171,6 +196,13 @@ void wdt_c_handler()
       break;
     }
     redrawScreen = 1;
+  }
+  if (secMotionCount == 25) {
+    mlAdvance(&ml0, &fieldFence);
+    if(p2sw_read()){
+      redrawScreen = 1;
+    }
+    secMotionCount = 0;
   }
 }
 void draw_solid_diamond(int col,int row,u_int color) {
@@ -223,6 +255,12 @@ void main()
   configureClocks();
   lcd_init();                 //init onboard LCD
   p2sw_init(15);              //init switches 1111
+
+  layerInit(&layer0);         //init layers
+  layerDraw(&layer0);         //init layers
+  layerGetBounds(&fieldLayer, &fieldFence);  //init layers
+
+  
   enableWDTInterrupts();      //enable periodic interrupt 
   or_sr(0x8);	              //GIE(enable interrupts) where GIE is bit 3 on 16 bit register
 
@@ -247,13 +285,7 @@ void main()
 	drawString5x7(14,(screenHeight)-10, "KEVIN SAMOA AOFIA", fontFgColor, COLOR_BLACK);
       }
       if((active_switches[2]) == '2') {
-	//draw_solid_diamond(20,20,COLOR_GOLDENROD);
-        layerInit(&layer0);
-	layerDraw(&layer0);
-	layerGetBounds(&fieldLayer, &fieldFence);
-	//redrawScreen = 0;
-	//movLayerDraw(&ml1, &layer1);
-	
+	movLayerDraw(&ml0, &layer0); //show motion only when switch is actively pressed
       }
       if((active_switches[3]) == '3') {
 	draw_multi_diamond((screenWidth/2),(screenHeight/2),color,color2,color3,color4);
