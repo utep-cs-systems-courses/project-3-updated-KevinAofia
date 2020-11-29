@@ -312,9 +312,7 @@ void wdt_c_handler()
 }
 void main()
 {
-  //P1DIR = LED_GREEN;
   P1DIR |= 0x41;	      //Green led on when CPU bit activated/on;
-  //P1OUT |= LED_GREEN;
   G_ON();
  
   configureClocks();
@@ -354,12 +352,14 @@ void main()
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[1]) =='1') { //infinite switch, sw[1]
-	drawString5x7(14,(screenHeight)-10, "KEVIN SAMOA AOFIA", fontFgColor, COLOR_BLACK);
+	//drawString5x7(14,(screenHeight)-12, "KEVIN SAMOA AOFIA", fontFgColor, COLOR_BLACK);
+	drawString8x12(13,(screenHeight-12), "KEVIN AOFIA", fontFgColor, COLOR_BLACK);
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[2]) == '2') {
 	movLayerDraw(&ml0, &layer0); //show motion only when switch is actively pressed
+	R_OFF();
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
@@ -374,8 +374,8 @@ void main()
 	}
       }	
     }
-    G_OFF();
-    or_sr(0x10);     //CPU OFF,0001 0000 bit 4 on the 16 bit register
     G_ON();
+    or_sr(0x10);     //CPU OFF,0001 0000 bit 4 on the 16 bit register
+    G_OFF();
   }
 }

@@ -48,9 +48,8 @@ void clearScreen(u_int colorBGR)
   fillRectangle(0, 0, screenWidth, screenHeight, colorBGR);
 }
 
-/** 5x7 font - this function draws background pixels
- *  Adapted from RobG's EduKit
- */
+//5x7 font - this function draws background pixels
+//Adapted from RobG's EduKit
 void drawChar5x7(u_char rcol, u_char rrow, char c, 
      u_int fgColorBGR, u_int bgColorBGR) 
 {
@@ -58,7 +57,7 @@ void drawChar5x7(u_char rcol, u_char rrow, char c,
   u_char row = 0;
   u_char bit = 0x01;
   u_char oc = c - 0x20;
-
+  
   lcd_setArea(rcol, rrow, rcol + 4, rrow + 7); /* relative to requested col/row */
   while (row < 8) {
     while (col < 5) {
@@ -71,7 +70,27 @@ void drawChar5x7(u_char rcol, u_char rrow, char c,
     row++;
   }
 }
-
+void drawChar8x12(u_char rcol, u_char rrow, char c, u_int fgColorBGR, u_int bgColorBGR) 
+{
+  u_char col = 0;
+  u_char row = 0;
+  u_char bit = 0x80;                            //comparison bit
+  u_char oc = c - 0x20;                         //c - offset,to index our 8x12 row
+  lcd_setArea(rcol, rrow, rcol + 7, rrow + 12); //relative to requested col/row
+  while (row < 11) {
+    while (col < 8) {
+      //[row] is correct hex value in our 8x12 font array
+      //while, compare our 8 bit hex value, bit by bit, high to low order
+      u_int colorBGR = (font_8x12[oc][row] & bit) ? fgColorBGR : bgColorBGR;
+      lcd_writeColor(colorBGR);
+      col++;
+      bit >>= 1; //while,shift right & update,1000 0000>>0100 0000>>0010 0000, etc.
+    }
+    col = 0;
+    bit = 0x80; //reset comparison bit to check next hex value
+    row++;
+  }
+}
 /** Draw string at col,row
  *  Type:
  *  FONT_SM - small (5x8,) FONT_MD - medium (8x12,) FONT_LG - large (11x16)
@@ -93,6 +112,16 @@ void drawString5x7(u_char col, u_char row, char *string,
     cols += 6;
   }
 }
+void drawString8x12(u_char col, u_char row, char *string,u_int fgColorBGR, u_int bgColorBGR)
+{
+  u_char cols = col;
+  while (*string) {
+    drawChar8x12(cols,row,*string++, fgColorBGR, bgColorBGR);
+    cols += 9; //add to cols to space out characters
+  }
+}
+
+
 
 
 /** Draw rectangle outline
