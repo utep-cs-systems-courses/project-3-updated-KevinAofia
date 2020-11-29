@@ -6,8 +6,11 @@
 #include "aofia_lab3.h"
 #include "shape.h"
 #include "abCircle.h"
+#include "buzzer.h"
+#include "SM.h"
+
 #define LED_GREEN BIT6             //P1.6
-#define RED_LED BIT0               //P1.0
+#define LED_RED BIT0               //P1.0
 
 short redrawScreen = 1;
 //u_int fontFgColor = COLOR_RED; 
@@ -28,8 +31,8 @@ u_int bgColor = COLOR_BLACK; //extern variable declared in shape.h, used for mot
 
 char active_switches[5];    //extern variable declared in aofia_lab3.h
 
-AbRect rect10 = {abRectGetBounds, abRectCheck, {10,10}};      //10x10 rectangle
-AbRArrow rightArrow = {abRArrowGetBounds, abRArrowCheck, 30}; //right arrow
+//AbRect rect10 = {abRectGetBounds, abRectCheck, {10,10}};      //10x10 rectangle
+//AbRArrow rightArrow = {abRArrowGetBounds, abRArrowCheck, 30}; //right arrow
 
 AbRectOutline fieldOutline = {	                              //motion play field/range
   abRectOutlineGetBounds, abRectOutlineCheck,
@@ -164,6 +167,8 @@ void wdt_c_handler()
     fontFgColor = (fontFgColor == COLOR_RED) ? COLOR_BLUE : COLOR_RED; //switch2 colors
     redrawScreen = 1;
   }
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
   if (secCount == 150) {
     //change colors of violet triangle faster than other shapes
     color2 = (color2 == COLOR_VIOLET) ? COLOR_LIME_GREEN : COLOR_VIOLET;
@@ -171,6 +176,8 @@ void wdt_c_handler()
     color4 = (color4 == COLOR_BLACK) ? COLOR_SIENNA : COLOR_BLACK;
     redrawScreen = 1;
   }
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
   if (secCount == 83) { //every 1/3 seconds, hide affirmations
     static char word_state = 0;
     switch(word_state) {
@@ -197,7 +204,9 @@ void wdt_c_handler()
     }
     redrawScreen = 1;
   }
-  if (secMotionCount == 25) {
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
+  if(secMotionCount == 25) {
     mlAdvance(&ml0, &fieldFence);
     if(p2sw_read()){
       redrawScreen = 1;
@@ -256,6 +265,8 @@ void main()
   lcd_init();                 //init onboard LCD
   p2sw_init(15);              //init switches 1111
 
+  buzzer_init();              //init buzzer
+  
   layerInit(&layer0);         //init layers
   layerDraw(&layer0);         //init layers
   layerGetBounds(&fieldLayer, &fieldFence);  //init layers
@@ -270,6 +281,8 @@ void main()
     if (redrawScreen) {         
       redrawScreen = 0;               //redraw should be set again in our interrupt driven code
       update_switches();              //update our extern switches variable
+      //////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[0]) =='0') {
 	drawString5x7(11,15, "SUPAFLY", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/3)-3,35, "MOTIVATED", word_color, COLOR_BLACK);
@@ -280,19 +293,38 @@ void main()
 	drawString5x7(11,95, "PERFECT", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/3),115, "SPECIAL", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/2)+2,95, "CRAYCRAY", word_color, COLOR_BLACK);
+	buzzer_set_period(1000);
+	P1OUT &= ~LED_GREEN;	//when switch is being pressed, turn green off 
       }
-      if((active_switches[1]) =='1') { //this switch does not work, but will use it for inf case
+      else {
+	if ((active_switches[2] != '2') && (active_switches[3] != '3')) //isolate buzzer for sw[0]
+	  buzzer_set_period(0);
+      }
+      //////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////
+      if((active_switches[1]) =='1') { //infinite switch, sw[1]
 	drawString5x7(14,(screenHeight)-10, "KEVIN SAMOA AOFIA", fontFgColor, COLOR_BLACK);
       }
+      //////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[2]) == '2') {
 	movLayerDraw(&ml0, &layer0); //show motion only when switch is actively pressed
+	siren();
       }
+      else {
+	if ((active_switches[0] != '0') && (active_switches[3] != '3')) //isolate buzzer for sw[2]
+	  buzzer_set_period(0);
+      }
+      //////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[3]) == '3') {
 	draw_multi_diamond((screenWidth/2),(screenHeight/2),color,color2,color3,color4);
       }
+      //////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////////////////////
     }
-    P1OUT &= ~LED_GREEN;	//green off
+    //P1OUT &= ~LED_GREEN;	//green off
     or_sr(0x10);		//CPU OFF,0001 0000 bit 4 on the 16 bit register
-    P1OUT |= LED_GREEN;		//green on
+    //P1OUT |= LED_GREEN;		//green on
   }
 }
