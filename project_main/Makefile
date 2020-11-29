@@ -35,4 +35,4 @@ clean:
 buzzer.o: buzzer.h
 
 #SM dependencies
-SM.o: SM.h buzzer.h
+SM.o: SM.h buzzer.h aofia_lab3.h
