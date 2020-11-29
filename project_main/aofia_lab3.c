@@ -12,29 +12,20 @@
 #define LED_GREEN BIT6             //P1.6
 #define LED_RED BIT0               //P1.0
 
+char siren_state;
+
 short redrawScreen = 1;
-//u_int fontFgColor = COLOR_RED; 
-//u_int color = COLOR_BLUE;
-//u_int color2 = COLOR_VIOLET;
-//u_int color3 = COLOR_RED;
-//u_int color4 = COLOR_BLACK;
-//u_int word_color = COLOR_LIME_GREEN;
 
-u_int fontFgColor = COLOR_RED, color = COLOR_BLUE,color2 = COLOR_VIOLET,color3 = COLOR_RED,
-  color4 = COLOR_BLACK,word_color = COLOR_LIME_GREEN;
+u_int fontFgColor = COLOR_RED, color = COLOR_WHITE,color2 = COLOR_RED,color3 = COLOR_CYAN,
+  color4 = COLOR_GOLD,word_color = COLOR_LIME_GREEN;
 
+u_int bgColor = COLOR_BLACK;                   //extern var declared in shape.h, used for motion bg
 
+char active_switches[5];                        //extern var declared in aofia_lab3.h
 
+Region fieldFence;		                //fence around playing field
 
-
-u_int bgColor = COLOR_BLACK; //extern variable declared in shape.h, used for motion bg
-
-char active_switches[5];    //extern variable declared in aofia_lab3.h
-
-//AbRect rect10 = {abRectGetBounds, abRectCheck, {10,10}};      //10x10 rectangle
-//AbRArrow rightArrow = {abRArrowGetBounds, abRArrowCheck, 30}; //right arrow
-
-AbRectOutline fieldOutline = {	                              //motion play field/range
+AbRectOutline fieldOutline = {	                //motion play field/range
   abRectOutlineGetBounds, abRectOutlineCheck,
   {screenWidth/2 - 10, screenHeight/2 - 10}
 };
@@ -111,7 +102,7 @@ void movLayerDraw(MovLayer *movLayers, Layer *layers) {
     l->posLast = l->pos;
     l->pos = l->posNext;
   }
-  or_sr(8);			//disable interrupts (GIE on)
+  or_sr(8);			            //disable interrupts (GIE on)
   for (movLayer = movLayers; movLayer; movLayer = movLayer->next) { //for each moving layer
     Region bounds;
     layerGetBounds(movLayer->layer, &bounds);
@@ -127,12 +118,12 @@ void movLayerDraw(MovLayer *movLayers, Layer *layers) {
 	  if (abShapeCheck(probeLayer->abShape, &probeLayer->pos, &pixelPos)) {
 	    color = probeLayer->color;
 	    break;
-	  } //if probe check
-	} //for checking all layers at col, row
+	  }                                  //if probe check
+	}                                    //for checking all layers at col, row
 	lcd_writeColor(color);
-      } //for col
-    } // for row
-  } // for moving layer being updated
+      }                                      //for col
+    }                                        //for row
+  }                                          //for moving layer being updated
 }	  
 void mlAdvance(MovLayer *ml, Region *fence) {
   Vec2 newPos;
@@ -149,69 +140,47 @@ void mlAdvance(MovLayer *ml, Region *fence) {
       }                                 //if outside of fence
     }                                   //for axis
     ml->layer->posNext = newPos;
-  }//for ml
+  }                                     //for ml
 }
-//u_int bgColor = COLOR_BLUE;          //The background color
-//int redrawScreen = 1;           //Boolean for whether screen needs to be redrawn
-Region fieldFence;		//fence around playing field
 
-void wdt_c_handler()
-{
-  static int secCount = 0;
-  static int secMotionCount = 0;
-
-  secCount ++;
-  secMotionCount ++;
-  if (secCount == 250) {      //every 1 second 
-    secCount = 0;             //reset counter every 250 interrupts per second
-    fontFgColor = (fontFgColor == COLOR_RED) ? COLOR_BLUE : COLOR_RED; //switch2 colors
-    redrawScreen = 1;
-  }
-  //////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////
-  if (secCount == 150) {
-    //change colors of violet triangle faster than other shapes
-    color2 = (color2 == COLOR_VIOLET) ? COLOR_LIME_GREEN : COLOR_VIOLET;
-    color3 = (color3 == COLOR_RED) ? COLOR_YELLOW : COLOR_RED;
-    color4 = (color4 == COLOR_BLACK) ? COLOR_SIENNA : COLOR_BLACK;
-    redrawScreen = 1;
-  }
-  //////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////
-  if (secCount == 83) { //every 1/3 seconds, hide affirmations
-    static char word_state = 0;
-    switch(word_state) {
-    case 0:
-      word_color = (word_color == COLOR_LIME_GREEN) ? COLOR_BLACK : COLOR_LIME_GREEN;
-      word_state = 1;
-      break;
-    case 1:
-      word_color = (word_color == COLOR_BLACK) ? COLOR_HOT_PINK : COLOR_BLACK;
-      word_state = 2;
-      break;
-    case 2:
-      word_color = (word_color == COLOR_HOT_PINK) ? COLOR_BLACK : COLOR_HOT_PINK;
-      word_state = 3;
-      break;
-    case 3:
-      word_color = (word_color == COLOR_BLACK) ? COLOR_LIME_GREEN : COLOR_BLACK;
-      word_state = 0;
-      break;
-    default:
-      word_color = COLOR_LIME_GREEN;
-      word_state = 0;
-      break;
+void draw_stick_figure() {
+  draw_solid_diamond(15,80,COLOR_RED);                    //left hand
+  draw_solid_diamond(105,80,COLOR_RED);                   //right hand
+  draw_multi_diamond(60,75,color,color2,color3,color4);   //body
+  for(u_char r = 0; r < 20; r++) {
+    for(u_char c = 0; c <= r; c++) {
+      drawPixel(80 + c, 120 + r , COLOR_RED);             //right foot
+      drawPixel(40 - c, 120 + r , COLOR_RED);             //left foot
     }
-    redrawScreen = 1;
   }
-  //////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////
-  if(secMotionCount == 25) {
-    mlAdvance(&ml0, &fieldFence);
-    if(p2sw_read()){
-      redrawScreen = 1;
+  for(u_char r = 0; r <= 25; r++) {
+    for(u_char c = 0; c <= 2; c++) {
+      drawPixel(80+c,95+r, COLOR_BLUE);                   //right leg
+      drawPixel(40-c,95+r, COLOR_BLUE);                   //left leg
+      drawPixel(59+c,50+r, COLOR_BLUE);                   //upper spine
+      drawPixel(16-c,56+r, COLOR_BLUE);                   //left arm
+      drawPixel(104+c,56+r, COLOR_BLUE);                  //right arm
     }
-    secMotionCount = 0;
+  }
+  for(u_char r = 0; r <= 5; r++) {
+    for(u_char c = 0; c <= 2; c++) {
+      drawPixel(60+c,95+r, COLOR_BLUE);                  //lower spine
+    }
+  }
+  for(u_char r = 0; r <= 2; r++) {
+    for(u_char c = 0; c <= 40; c++) {
+      drawPixel(39+c,100+r, COLOR_BLUE);                 //leg connector
+    }
+  }
+  for(u_char r = 0; r <= 2; r++) {
+    for(u_char c = 0; c <= 88; c++) {
+      drawPixel(16+c,56+r, COLOR_BLUE);                  //arm connector
+    }
+  }
+  for(u_char r = 0; r <= 25; r++) {
+    for(u_char c = 0; c <= 25; c++) {
+      drawPixel(47+c,25+r, COLOR_RED);                   //head
+    }
   }
 }
 void draw_solid_diamond(int col,int row,u_int color) {
@@ -256,26 +225,108 @@ void update_switches() {              //code reused from original p2sw-demo
   }
   active_switches[4] = 0;             //terminating char string
 }
+void G_ON(){
+  P1OUT |= 0x40;
+}
+void G_OFF() {
+   P1OUT &= ~0x40;
+}
+void GR_ON(){
+  P1OUT |= 0x41;
+}
+void R_ON(){
+  P1OUT |= 0x01;
+}
+void R_OFF() {
+   P1OUT &= ~0x01;
+}
+void GR_OFF(){
+  P1OUT &= ~0x41;
+}
+void wdt_c_handler()
+{
+  static int secSwitch1Count = 0; //interrupts for sw1
+  static int secMotionCount = 0;  //interrupts for sw3
+  static int secColorCount = 0;   //interrupts for sw4
+
+  secSwitch1Count++;
+  secMotionCount++;
+  secColorCount++;
+
+  if (secColorCount == 250) { //interrupt every second 
+    secColorCount = 0;             
+    fontFgColor = (fontFgColor == COLOR_RED) ? COLOR_BLUE : COLOR_RED; 
+    color = (color == COLOR_WHITE) ? COLOR_LIME_GREEN : COLOR_WHITE;
+    redrawScreen = 1;
+  }
+  if (secColorCount == 125) { //interrupt every 1/2 second
+    color2 = (color2 == COLOR_RED) ? COLOR_SKY_BLUE : COLOR_RED;
+    color3 = (color3 == COLOR_CYAN) ? COLOR_DARK_VIOLE : COLOR_CYAN;
+    redrawScreen = 1;
+  }
+  if (secColorCount == 84) { //interrupt every 1/3 second
+    color4 = (color4 == COLOR_GOLD) ? COLOR_TAN : COLOR_GOLD;
+    redrawScreen = 1;
+  }
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
+  if (secSwitch1Count == 100) { //every 1/3 seconds, hide affirmations
+    static char word_state = 0;
+    switch(word_state) {
+    case 0:
+      word_color = (word_color == COLOR_LIME_GREEN) ? COLOR_BLACK : COLOR_LIME_GREEN;
+      word_state = 1;
+      secSwitch1Count = 0;
+      break;
+    case 1:
+      word_color = (word_color == COLOR_BLACK) ? COLOR_HOT_PINK : COLOR_BLACK;
+      word_state = 2;
+      secSwitch1Count = 0;
+      break;
+    case 2:
+      word_color = (word_color == COLOR_HOT_PINK) ? COLOR_BLACK : COLOR_HOT_PINK;
+      word_state = 3;
+      secSwitch1Count = 0;
+      break;
+    case 3:
+      word_color = (word_color == COLOR_BLACK) ? COLOR_LIME_GREEN : COLOR_BLACK;
+      word_state = 0;
+      secSwitch1Count = 0;
+      break;
+    default:
+      word_color = COLOR_LIME_GREEN;
+      word_state = 0;
+      break;
+    }
+    redrawScreen = 1;
+  }
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
+  if(secMotionCount == 25) {
+    mlAdvance(&ml0, &fieldFence);
+    if(p2sw_read()){
+      redrawScreen = 1;
+    }
+    secMotionCount = 0;
+  }
+}
 void main()
 {
-  P1DIR |= LED_GREEN;	      //Green led on when CPU bit activated/on	
-  P1OUT |= LED_GREEN;
-  
+  //P1DIR = LED_GREEN;
+  P1DIR |= 0x41;	      //Green led on when CPU bit activated/on;
+  //P1OUT |= LED_GREEN;
+  G_ON();
+ 
   configureClocks();
   lcd_init();                 //init onboard LCD
   p2sw_init(15);              //init switches 1111
-
   buzzer_init();              //init buzzer
-  
   layerInit(&layer0);         //init layers
   layerDraw(&layer0);         //init layers
   layerGetBounds(&fieldLayer, &fieldFence);  //init layers
-
-  
   enableWDTInterrupts();      //enable periodic interrupt 
   or_sr(0x8);	              //GIE(enable interrupts) where GIE is bit 3 on 16 bit register
-
-  
+ 
   clearScreen(COLOR_BLACK);           //main black screen
   while (1) {			      //looping forever with occasional interrupt
     if (redrawScreen) {         
@@ -292,13 +343,13 @@ void main()
 	drawString5x7((screenWidth/2)+2,55, "FABULOUS", word_color, COLOR_BLACK);
 	drawString5x7(11,95, "PERFECT", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/3),115, "SPECIAL", word_color, COLOR_BLACK);
-	drawString5x7((screenWidth/2)+2,95, "CRAYCRAY", word_color, COLOR_BLACK);
-	buzzer_set_period(1000);
-	P1OUT &= ~LED_GREEN;	//when switch is being pressed, turn green off 
+	drawString5x7((screenWidth/2)+2,95, "AWESOME", word_color, COLOR_BLACK);
+	buzzer_set_period(400);
       }
       else {
-	if ((active_switches[2] != '2') && (active_switches[3] != '3')) //isolate buzzer for sw[0]
+	if((active_switches[2] != '2') && (active_switches[3] != '3')){ //if all switches are up
 	  buzzer_set_period(0);
+	}
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
@@ -309,22 +360,22 @@ void main()
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[2]) == '2') {
 	movLayerDraw(&ml0, &layer0); //show motion only when switch is actively pressed
-	siren();
-      }
-      else {
-	if ((active_switches[0] != '0') && (active_switches[3] != '3')) //isolate buzzer for sw[2]
-	  buzzer_set_period(0);
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[3]) == '3') {
-	draw_multi_diamond((screenWidth/2),(screenHeight/2),color,color2,color3,color4);
+	siren();
+	draw_stick_figure();
       }
-      //////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////////////////////////////////////////////////////////////////
+      else {
+	//if all switches are up, turn off buzzer
+	if((active_switches[0] != '0') && (active_switches[2] != '2')) {
+	  buzzer_set_period(0);
+	}
+      }	
     }
-    //P1OUT &= ~LED_GREEN;	//green off
-    or_sr(0x10);		//CPU OFF,0001 0000 bit 4 on the 16 bit register
-    //P1OUT |= LED_GREEN;		//green on
+    G_OFF();
+    or_sr(0x10);     //CPU OFF,0001 0000 bit 4 on the 16 bit register
+    G_ON();
   }
 }
