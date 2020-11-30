@@ -22,7 +22,7 @@ load1: aofia1.elf
 	msp430loader.sh $^
 #############################################################
 #added -lp2sw, -lCircle, -lShape
-aofia_lab3.elf: ${COMMON_OBJECTS} aofia_lab3.o wdt_handler.o buzzer.o SM.o
+aofia_lab3.elf: ${COMMON_OBJECTS} aofia_lab3.o wdt_handler.o buzzer.o siren-assy.o
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd -lp2sw -lCircle -lShape
 
 load_lab3: aofia_lab3.elf
@@ -34,5 +34,5 @@ clean:
 #buzzer dependencies
 buzzer.o: buzzer.h
 
-#SM dependencies
-SM.o: SM.h buzzer.h aofia_lab3.h
+#SM dependencies (removed SM.o targets/dependencies and replaced it with assembly)
+#SM.o: SM.h buzzer.h aofia_lab3.h

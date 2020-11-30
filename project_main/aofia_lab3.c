@@ -9,51 +9,46 @@
 #include "buzzer.h"
 #include "SM.h"
 
-#define LED_GREEN BIT6             //P1.6
-#define LED_RED BIT0               //P1.0
-
-char siren_state;
-
-short redrawScreen = 1;
+#define LED_GREEN BIT6                        //P1.6 ,my board is flipped
+#define LED_RED BIT0                          //P1.0 ,my board is flipped
 
 u_int fontFgColor = COLOR_RED, color = COLOR_WHITE,color2 = COLOR_RED,color3 = COLOR_CYAN,
-  color4 = COLOR_GOLD,word_color = COLOR_LIME_GREEN;
+  color4 = COLOR_GOLD,word_color = COLOR_LIME_GREEN,bgColor = COLOR_BLACK;
 
-u_int bgColor = COLOR_BLACK;                   //extern var declared in shape.h, used for motion bg
+char siren_state;                             //extern var declared in SM.h
+char active_switches[5];                      //extern var declared in aofia_lab3.h
+Region fieldFence;		              //fence around playing field
+short redrawScreen = 1;
 
-char active_switches[5];                        //extern var declared in aofia_lab3.h
-
-Region fieldFence;		                //fence around playing field
-
-AbRectOutline fieldOutline = {	                //motion play field/range
+AbRectOutline fieldOutline = {	              //motion play field/range
   abRectOutlineGetBounds, abRectOutlineCheck,
   {screenWidth/2 - 10, screenHeight/2 - 10}
 };
-Layer layer6 = {
+Layer layer6 = {                              //layer with an colored shape
   (AbShape *)&circle10,
-  {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
-  {0,0}, {0,0},				    //last & next pos 
+  {(screenWidth/2)+10, (screenHeight/2)+5},   //bit below & right of center
+  {0,0}, {0,0},				      //last & next pos 
   COLOR_BLUE,
   0
 };
-Layer layer5 = {		            //Layer with an orange circle
+Layer layer5 = {	      
   (AbShape *)&circle8,
-  {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
-  {0,0}, {0,0},				    //last & next pos
+  {(screenWidth/2)+10, (screenHeight/2)+5},
+  {0,0}, {0,0},
   COLOR_DARK_GREEN, 
   &layer6,
 };
-Layer layer4 = {		            //Layer with an orange circle
+Layer layer4 = {		           
   (AbShape *)&circle6,
-  {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
-  {0,0}, {0,0},				    //last & next pos
+  {(screenWidth/2)+10, (screenHeight/2)+5},
+  {0,0}, {0,0},
   COLOR_PURPLE, 
   &layer5,
 };
-Layer layer3 = {		            //Layer with an orange circle
+Layer layer3 = { 
   (AbShape *)&circle4,
-  {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
-  {0,0}, {0,0},				    //last & next pos
+  {(screenWidth/2)+10, (screenHeight/2)+5},
+  {0,0}, {0,0},				   
   COLOR_WHITE, 
   &layer4,
 };
@@ -61,21 +56,20 @@ Layer fieldLayer = {		            //cast a boundary layer
   (AbShape *) &fieldOutline,
   {screenWidth/2, screenHeight/2},          //center
   {0,0}, {0,0},				    //last & next pos
-  COLOR_BLACK, //WHERE
+  COLOR_BLACK,                              //boundary matches bg
   &layer3,
 };
 Layer layer1 = {		           
-  //(AbShape *)&rect10,
   (AbShape *)&circle2,
-  {screenWidth/2, screenHeight/2},          //center
-  {0,0}, {0,0},				    //last & next pos
+  {screenWidth/2, screenHeight/2},         
+  {0,0}, {0,0},
   COLOR_RED,
   &fieldLayer,
 };
 Layer layer0 = {		           
   (AbShape *)&circle12,
-  {(screenWidth/2)+10, (screenHeight/2)+5}, //bit below & right of center
-  {0,0}, {0,0},				    //last & next pos
+  {(screenWidth/2)+10, (screenHeight/2)+5},
+  {0,0}, {0,0},
   COLOR_LIME_GREEN,
   &layer1,
 };
@@ -96,13 +90,13 @@ MovLayer ml0 = { &layer0, {3,1}, &ml1 };
 void movLayerDraw(MovLayer *movLayers, Layer *layers) {
   int row, col;
   MovLayer *movLayer;
-  and_sr(~8);			//disable interrupts (GIE off)
+  and_sr(~8);	 //disable interrupts (GIE OFF)
   for (movLayer = movLayers; movLayer; movLayer = movLayer->next) { //for each moving layer
     Layer *l = movLayer->layer;
     l->posLast = l->pos;
     l->pos = l->posNext;
   }
-  or_sr(8);			            //disable interrupts (GIE on)
+  or_sr(8);	 //disable interrupts (GIE ON)
   for (movLayer = movLayers; movLayer; movLayer = movLayer->next) { //for each moving layer
     Region bounds;
     layerGetBounds(movLayer->layer, &bounds);
@@ -245,11 +239,11 @@ void GR_OFF(){
 }
 void wdt_c_handler()
 {
-  static int secSwitch1Count = 0; //interrupts for sw1
+  static int secFooterCount = 0; //interrupts for sw1
   static int secMotionCount = 0;  //interrupts for sw3
   static int secColorCount = 0;   //interrupts for sw4
 
-  secSwitch1Count++;
+  secFooterCount++;
   secMotionCount++;
   secColorCount++;
 
@@ -270,28 +264,28 @@ void wdt_c_handler()
   }
   //////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////
-  if (secSwitch1Count == 100) { //every 1/3 seconds, hide affirmations
+  if (secFooterCount == 100) { //every 1/3 seconds, hide affirmations
     static char word_state = 0;
     switch(word_state) {
     case 0:
       word_color = (word_color == COLOR_LIME_GREEN) ? COLOR_BLACK : COLOR_LIME_GREEN;
       word_state = 1;
-      secSwitch1Count = 0;
+      secFooterCount = 0;
       break;
     case 1:
       word_color = (word_color == COLOR_BLACK) ? COLOR_HOT_PINK : COLOR_BLACK;
       word_state = 2;
-      secSwitch1Count = 0;
+      secFooterCount = 0;
       break;
     case 2:
       word_color = (word_color == COLOR_HOT_PINK) ? COLOR_BLACK : COLOR_HOT_PINK;
       word_state = 3;
-      secSwitch1Count = 0;
+      secFooterCount = 0;
       break;
     case 3:
       word_color = (word_color == COLOR_BLACK) ? COLOR_LIME_GREEN : COLOR_BLACK;
       word_state = 0;
-      secSwitch1Count = 0;
+      secFooterCount = 0;
       break;
     default:
       word_color = COLOR_LIME_GREEN;
@@ -325,14 +319,15 @@ void main()
   enableWDTInterrupts();      //enable periodic interrupt 
   or_sr(0x8);	              //GIE(enable interrupts) where GIE is bit 3 on 16 bit register
  
-  clearScreen(COLOR_BLACK);           //main black screen
-  while (1) {			      //looping forever with occasional interrupt
+  clearScreen(COLOR_BLACK);   //main black screen
+  while (1) {		      //looping forever with occasional interrupt
     if (redrawScreen) {         
-      redrawScreen = 0;               //redraw should be set again in our interrupt driven code
-      update_switches();              //update our extern switches variable
+      redrawScreen = 0;       //redraw should be set again in our interrupt driven code
+      update_switches();      //update our extern switches variable
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
-      if((active_switches[0]) =='0') {
+      if((active_switches[0]) =='0') {       //draw affirmations and set buzzer
+	
 	drawString5x7(11,15, "SUPAFLY", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/3)-3,35, "MOTIVATED", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/2)+2,15, "BRANIAC", word_color, COLOR_BLACK);
@@ -345,25 +340,24 @@ void main()
 	buzzer_set_period(400);
       }
       else {
-	if((active_switches[2] != '2') && (active_switches[3] != '3')){ //if all switches are up
+	//if all switches are up, turn off buzzer
+	if((active_switches[2] != '2') && (active_switches[3] != '3')){
 	  buzzer_set_period(0);
 	}
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
-      if((active_switches[1]) =='1') { //infinite switch, sw[1]
-	//drawString5x7(14,(screenHeight)-12, "KEVIN SAMOA AOFIA", fontFgColor, COLOR_BLACK);
+      if((active_switches[1]) =='1') {       //draw footer and change colors
 	drawString8x12(13,(screenHeight-12), "KEVIN AOFIA", fontFgColor, COLOR_BLACK);
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
-      if((active_switches[2]) == '2') {
-	movLayerDraw(&ml0, &layer0); //show motion only when switch is actively pressed
-	R_OFF();
+      if((active_switches[2]) == '2') {     //draw shapes in motion
+	movLayerDraw(&ml0, &layer0);
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
-      if((active_switches[3]) == '3') {
+      if((active_switches[3]) == '3') {     //draw stick man and activate siren
 	siren();
 	draw_stick_figure();
       }
@@ -375,7 +369,7 @@ void main()
       }	
     }
     G_ON();
-    or_sr(0x10);     //CPU OFF,0001 0000 bit 4 on the 16 bit register
+    or_sr(0x10);     //CPU OFF,0001 0000 bit 4 on the 16 bit sr_register
     G_OFF();
   }
 }
