@@ -8,7 +8,7 @@ siren_state:
 frequency:			;static var in ram
 	.word 700
 
-	.text			;store in flash memory
+	.text			;if i stored in flash(.text),msp430 would complain "unsupported"
 	.align 2		;keep even indexing 
 jt:
 	.word case0		;jt[0]

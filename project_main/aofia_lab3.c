@@ -8,18 +8,24 @@
 #include "abCircle.h"
 #include "buzzer.h"
 #include "SM.h"
+#include "led.h"
 
-#define LED_GREEN BIT6                        //P1.6 ,my board is flipped
-#define LED_RED BIT0                          //P1.0 ,my board is flipped
-
+//defining/declaring our font, background, and diamond colors
 u_int fontFgColor = COLOR_RED, color = COLOR_WHITE,color2 = COLOR_RED,color3 = COLOR_CYAN,
   color4 = COLOR_GOLD,word_color = COLOR_LIME_GREEN,bgColor = COLOR_BLACK;
 
-char siren_state;                             //extern var declared in SM.h
-char active_switches[5];                      //extern var declared in aofia_lab3.h
-Region fieldFence;		              //fence around playing field
-short redrawScreen = 1;
+char active_switches[5];                      //extern var defined in aofia_lab3.h
 
+void siren();                                 //function defined assembly function
+
+char blinkbuzz_state;                         //extern var defined in SM.h
+
+Region fieldFence;		              //fence around playing field
+
+short redrawScreen = 1;                       //redrawScreen set to initial start 
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 AbRectOutline fieldOutline = {	              //motion play field/range
   abRectOutlineGetBounds, abRectOutlineCheck,
   {screenWidth/2 - 10, screenHeight/2 - 10}
@@ -28,8 +34,8 @@ Layer layer6 = {                              //layer with an colored shape
   (AbShape *)&circle10,
   {(screenWidth/2)+10, (screenHeight/2)+5},   //bit below & right of center
   {0,0}, {0,0},				      //last & next pos 
-  COLOR_BLUE,
-  0
+  COLOR_BLUE,                                 //color of shape
+  0                                           //->next value
 };
 Layer layer5 = {	      
   (AbShape *)&circle8,
@@ -56,7 +62,7 @@ Layer fieldLayer = {		            //cast a boundary layer
   (AbShape *) &fieldOutline,
   {screenWidth/2, screenHeight/2},          //center
   {0,0}, {0,0},				    //last & next pos
-  COLOR_BLACK,                              //boundary matches bg
+  COLOR_BLACK,                              //boundary matches bg appear "invisible"
   &layer3,
 };
 Layer layer1 = {		           
@@ -73,12 +79,16 @@ Layer layer0 = {
   COLOR_LIME_GREEN,
   &layer1,
 };
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 //Moving Layer,L.L. layer ref.,Veloc. rep. one iter. of change(dir. & mag.)
 typedef struct MovLayer_s {
   Layer *layer;
   Vec2 velocity;
   struct MovLayer_s *next;
 } MovLayer;
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
                                          //initial value of {0,0} will be overwritten
 MovLayer ml6 = { &layer6, {1,2}, 0 };    //added circles to linked list
 MovLayer ml5 = { &layer5, {2,1}, &ml6 };
@@ -86,7 +96,8 @@ MovLayer ml4 = { &layer4, {1,1}, &ml5 };
 MovLayer ml3 = { &layer3, {2,2}, &ml4 };        
 MovLayer ml1 = { &layer1, {1,3}, &ml3 }; 
 MovLayer ml0 = { &layer0, {3,1}, &ml1 };
-
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 void movLayerDraw(MovLayer *movLayers, Layer *layers) {
   int row, col;
   MovLayer *movLayer;
@@ -118,7 +129,9 @@ void movLayerDraw(MovLayer *movLayers, Layer *layers) {
       }                                      //for col
     }                                        //for row
   }                                          //for moving layer being updated
-}	  
+}
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 void mlAdvance(MovLayer *ml, Region *fence) {
   Vec2 newPos;
   u_char axis;
@@ -136,7 +149,8 @@ void mlAdvance(MovLayer *ml, Region *fence) {
     ml->layer->posNext = newPos;
   }                                     //for ml
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 void draw_stick_figure() {
   draw_solid_diamond(15,80,COLOR_RED);                    //left hand
   draw_solid_diamond(105,80,COLOR_RED);                   //right hand
@@ -177,6 +191,8 @@ void draw_stick_figure() {
     }
   }
 }
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 void draw_solid_diamond(int col,int row,u_int color) {
   //draw upper right triangles
   for(u_char r = 0; r < 10; r++) {
@@ -194,6 +210,8 @@ void draw_solid_diamond(int col,int row,u_int color) {
     }
   }
 }
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 void draw_multi_diamond(int col,int row, u_int color,u_int color2,u_int color3,u_int color4) {
   //draw upper right triangles
   for(u_char r = 0; r < 10; r++) {
@@ -211,81 +229,73 @@ void draw_multi_diamond(int col,int row, u_int color,u_int color2,u_int color3,u
     }
   }
 }
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 void update_switches() {              //code reused from original p2sw-demo
   u_int switches = p2sw_read(), i;
   for(i=0; i<4; i++) {
-                                      //1 times 2 raised to i to activate correct port2 bit
+                                     //1 times 2 raised to i to activate correct port2 bit
     active_switches[i] = (switches & (1 << i)) ? '-' : '0' + i; //if activated, update switch val
   }
   active_switches[4] = 0;             //terminating char string
 }
-void G_ON(){
-  P1OUT |= 0x40;
-}
-void G_OFF() {
-   P1OUT &= ~0x40;
-}
-void GR_ON(){
-  P1OUT |= 0x41;
-}
-void R_ON(){
-  P1OUT |= 0x01;
-}
-void R_OFF() {
-   P1OUT &= ~0x01;
-}
-void GR_OFF(){
-  P1OUT &= ~0x41;
-}
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 void wdt_c_handler()
 {
-  static int secFooterCount = 0; //interrupts for sw1
-  static int secMotionCount = 0;  //interrupts for sw3
-  static int secColorCount = 0;   //interrupts for sw4
-
-  secFooterCount++;
-  secMotionCount++;
-  secColorCount++;
-
-  if (secColorCount == 250) { //interrupt every second 
-    secColorCount = 0;             
+  static int affirmationsCount = 0;   //interrupts for sw1 affirmation colors
+  static int blinkbuzzCount = 0;      //interuppts for sw1 blinkbuzz state
+  static int circleCount = 0;         //interrupts for sw3 moving of layers
+  static int dimCount = 0;            //interrupts for sw3 dim state
+  static int diamondCount = 0;        //interrupts for sw4 diamond color
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
+  affirmationsCount++;
+  blinkbuzzCount++;
+  circleCount++;
+  diamondCount++;
+  dimCount++;
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
+  if (diamondCount == 250) {           //interrupt every second 
+    diamondCount = 0;             
     fontFgColor = (fontFgColor == COLOR_RED) ? COLOR_BLUE : COLOR_RED; 
     color = (color == COLOR_WHITE) ? COLOR_LIME_GREEN : COLOR_WHITE;
     redrawScreen = 1;
   }
-  if (secColorCount == 125) { //interrupt every 1/2 second
+  if (diamondCount == 125) {           //interrupt every 1/2 second
     color2 = (color2 == COLOR_RED) ? COLOR_SKY_BLUE : COLOR_RED;
     color3 = (color3 == COLOR_CYAN) ? COLOR_DARK_VIOLE : COLOR_CYAN;
     redrawScreen = 1;
   }
-  if (secColorCount == 84) { //interrupt every 1/3 second
+  if (diamondCount == 84) {           //interrupt every 1/3 second
     color4 = (color4 == COLOR_GOLD) ? COLOR_TAN : COLOR_GOLD;
     redrawScreen = 1;
   }
   //////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////
-  if (secFooterCount == 100) { //every 1/3 seconds, hide affirmations
+  if (affirmationsCount == 100) {    //every 100/250 interrupts, hide affirmations
     static char word_state = 0;
     switch(word_state) {
     case 0:
       word_color = (word_color == COLOR_LIME_GREEN) ? COLOR_BLACK : COLOR_LIME_GREEN;
       word_state = 1;
-      secFooterCount = 0;
+      affirmationsCount = 0;
       break;
     case 1:
       word_color = (word_color == COLOR_BLACK) ? COLOR_HOT_PINK : COLOR_BLACK;
       word_state = 2;
-      secFooterCount = 0;
+      affirmationsCount = 0;
       break;
     case 2:
       word_color = (word_color == COLOR_HOT_PINK) ? COLOR_BLACK : COLOR_HOT_PINK;
       word_state = 3;
-      secFooterCount = 0;
+      affirmationsCount = 0;
       break;
     case 3:
       word_color = (word_color == COLOR_BLACK) ? COLOR_LIME_GREEN : COLOR_BLACK;
       word_state = 0;
-      secFooterCount = 0;
+      affirmationsCount = 0;
       break;
     default:
       word_color = COLOR_LIME_GREEN;
@@ -296,19 +306,29 @@ void wdt_c_handler()
   }
   //////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////
-  if(secMotionCount == 25) {
+  if(blinkbuzzCount == 83) {         //every 1/3 second
+    blinkbuzz_state++;
+    blinkbuzzCount = 0;
+  }
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
+  if(circleCount == 25) {           //every 1/10 second
     mlAdvance(&ml0, &fieldFence);
     if(p2sw_read()){
       redrawScreen = 1;
     }
-    secMotionCount = 0;
+    circleCount = 0;
+  }
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////
+  if(dimCount == 125){
+    dim_state++;
+    dimCount = 0;
   }
 }
 void main()
 {
-  P1DIR |= 0x41;	      //Green led on when CPU bit activated/on;
-  G_ON();
- 
+  led_init();                 //init our leds but do not turn any on
   configureClocks();
   lcd_init();                 //init onboard LCD
   p2sw_init(15);              //init switches 1111
@@ -327,7 +347,6 @@ void main()
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[0]) =='0') {       //draw affirmations and set buzzer
-	
 	drawString5x7(11,15, "SUPAFLY", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/3)-3,35, "MOTIVATED", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/2)+2,15, "BRANIAC", word_color, COLOR_BLACK);
@@ -337,22 +356,19 @@ void main()
 	drawString5x7(11,95, "PERFECT", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/3),115, "SPECIAL", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/2)+2,95, "AWESOME", word_color, COLOR_BLACK);
-	buzzer_set_period(400);
-      }
-      else {
-	//if all switches are up, turn off buzzer
-	if((active_switches[2] != '2') && (active_switches[3] != '3')){
-	  buzzer_set_period(0);
-	}
+	blinkbuzz(); //this will change states as fast as our while loop and occasional interrupt
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[1]) =='1') {       //draw footer and change colors
 	drawString8x12(13,(screenHeight-12), "KEVIN AOFIA", fontFgColor, COLOR_BLACK);
+	state_advance();                     //dim current state until interrupt advances state
+	redrawScreen = 1;
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[2]) == '2') {     //draw shapes in motion
+	siren();
 	movLayerDraw(&ml0, &layer0);
       }
       //////////////////////////////////////////////////////////////////////////////////////////
@@ -362,14 +378,13 @@ void main()
 	draw_stick_figure();
       }
       else {
-	//if all switches are up, turn off buzzer
-	if((active_switches[0] != '0') && (active_switches[2] != '2')) {
+	//if all switches are up, turn off buzzer,turn off RED_LED
+	if((active_switches[0] != '0')&&(active_switches[2] != '2')&&(active_switches[3] != '3')){
 	  buzzer_set_period(0);
+	  R_off();
 	}
-      }	
-    }
-    G_ON();
+      }
+    }                //CPU off, we will check on &redrawScreen upon waking up
     or_sr(0x10);     //CPU OFF,0001 0000 bit 4 on the 16 bit sr_register
-    G_OFF();
   }
 }
