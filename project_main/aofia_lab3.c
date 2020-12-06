@@ -16,7 +16,8 @@ u_int fontFgColor = COLOR_RED, color = COLOR_WHITE,color2 = COLOR_RED,color3 = C
 
 char active_switches[5];                      //extern var defined in aofia_lab3.h
 
-void siren();                                 //function defined assembly function
+void siren();                                 //function .s using unsigned comparison
+void siren2();                                //function .s using signed comparions
 
 char blinkbuzz_state;                         //extern var defined in SM.h
 
@@ -368,13 +369,13 @@ void main()
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[2]) == '2') {     //draw shapes in motion
-	siren();
+	siren2();                           //siren with signed comparison
 	movLayerDraw(&ml0, &layer0);
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[3]) == '3') {     //draw stick man and activate siren
-	siren();
+	siren();                            //siren with unsigned comparison
 	draw_stick_figure();
       }
       else {

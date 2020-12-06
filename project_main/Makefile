@@ -9,7 +9,7 @@ AS              = msp430-elf-gcc -mmcu=${CPU} -c
 #############################################################
 #added -lp2sw, -lCircle, -lShape
 #added buzzer.o SM.o led.o siren-assy.0
-aofia_lab3.elf: ${COMMON_OBJECTS} aofia_lab3.o wdt_handler.o buzzer.o SM.o led.o siren-assy.o
+aofia_lab3.elf: ${COMMON_OBJECTS} aofia_lab3.o wdt_handler.o buzzer.o SM.o led.o siren2-assy.o siren-assy.o
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd -lp2sw -lCircle -lShape
 
 final: aofia_lab3.elf
