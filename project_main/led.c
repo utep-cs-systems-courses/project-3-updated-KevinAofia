@@ -29,6 +29,9 @@ void led_update()
   }
 }
 
+/*all functions below take advantage of the array redVal and greenVal, if we want to change
+  specific LED, we set its array to one, which will in turn set the correct bit to true*/
+
 void R_on(){
   red_on = 1;
   led_changed = 1;

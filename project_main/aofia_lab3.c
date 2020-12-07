@@ -322,7 +322,7 @@ void wdt_c_handler()
   }
   //////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////
-  if(dimCount == 125){
+  if(dimCount == 125){              //every 1/2 second
     dim_state++;
     dimCount = 0;
   }
@@ -344,7 +344,7 @@ void main()
   while (1) {		      //looping forever with occasional interrupt
     if (redrawScreen) {         
       redrawScreen = 0;       //redraw should be set again in our interrupt driven code
-      update_switches();      //update our extern switches variable
+      update_switches();      //update our extern active_switches variable
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[0]) =='0') {       //draw affirmations and set buzzer
@@ -357,7 +357,7 @@ void main()
 	drawString5x7(11,95, "PERFECT", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/3),115, "SPECIAL", word_color, COLOR_BLACK);
 	drawString5x7((screenWidth/2)+2,95, "AWESOME", word_color, COLOR_BLACK);
-	blinkbuzz(); //this will change states as fast as our while loop and occasional interrupt
+	blinkbuzz(); //will change states as fast as our while loop and occasional interrupt
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
@@ -370,7 +370,7 @@ void main()
       //////////////////////////////////////////////////////////////////////////////////////////
       if((active_switches[2]) == '2') {     //draw shapes in motion
 	siren2();                           //siren with signed comparison
-	movLayerDraw(&ml0, &layer0);
+	movLayerDraw(&ml0, &layer0);        
       }
       //////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////
@@ -379,13 +379,13 @@ void main()
 	draw_stick_figure();
       }
       else {
-	//if all switches are up, turn off buzzer,turn off RED_LED
+	//if switches 1,3,4 are up, turn off buzzer,turn off RED_LED
 	if((active_switches[0] != '0')&&(active_switches[2] != '2')&&(active_switches[3] != '3')){
 	  buzzer_set_period(0);
 	  R_off();
 	}
       }
-    }                //CPU off, we will check on &redrawScreen upon waking up
+    }                //CPU off, we will compare with &redrawScreen upon waking up
     or_sr(0x10);     //CPU OFF,0001 0000 bit 4 on the 16 bit sr_register
   }
 }
